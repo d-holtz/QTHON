@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scorer Console — QTHON Football Toss</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#060b1c">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔒</text></svg>">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+  <div class="wrap" style="max-width:720px">
+    <header class="masthead">
+      <div class="brand">
+        <div class="crest">🏈</div>
+        <div>
+          <h1>Scorer Console</h1>
+          <p id="who">Checking your access…</p>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <a href="index.html" target="_blank"><button class="ghost small">View board</button></a>
+        <button class="ghost small hidden" id="signout">Sign out</button>
+      </div>
+    </header>
+
+    <!-- signed out -->
+    <section class="card hidden" id="login-card">
+      <h2>Sign in</h2>
+      <p class="hint">Only accounts on the admin list can change scores. Everyone else can view the board but not edit it.</p>
+      <form id="login-form">
+        <div class="field"><label for="email">Email</label><input type="email" id="email" autocomplete="username" required></div>
+        <div class="field"><label for="password">Password</label><input type="password" id="password" autocomplete="current-password" required></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="primary" type="submit">Sign in</button>
+          <button class="ghost" type="button" id="signup">Create the admin account</button>
+        </div>
+      </form>
+      <p class="hint" style="margin-top:14px">First time? Use <em>Create the admin account</em> — the very first account created becomes the admin automatically.</p>
+    </section>
+
+    <!-- signed in, not an admin -->
+    <section class="card hidden" id="denied-card">
+      <h2>No edit access</h2>
+      <p class="hint">You&rsquo;re signed in, but this account isn&rsquo;t on the admin list, so it can&rsquo;t change scores. Send the ID below to whoever runs the board to be added.</p>
+      <div class="field"><label>Your user ID</label><input type="text" id="uid" readonly></div>
+    </section>
+
+    <!-- signed in as admin -->
+    <div class="hidden" id="app">
+      <div class="tabs">
+        <button class="tab on" data-tab="score">Add score</button>
+        <button class="tab" data-tab="entries">Recent entries</button>
+        <button class="tab" data-tab="players">Players</button>
+        <button class="tab" data-tab="settings">Event settings</button>
+      </div>
+
+      <section class="card" data-panel="score">
+        <h2 id="score-title">Add a score</h2>
+        <p class="hint">Type the player&rsquo;s name — pick an existing one to add to their total, or type a new name to create them.</p>
+        <form id="score-form">
+          <div class="field">
+            <label for="pname">Player name</label>
+            <input type="text" id="pname" list="people" autocomplete="off" placeholder="e.g. Jordan Reyes" required>
+            <datalist id="people"></datalist>
+          </div>
+          <div class="field">
+            <label>Throws bought</label>
+            <div class="chips" style="margin-bottom:10px">
+              <button type="button" class="chip" data-throws="1">1 throw &middot; <span data-price="1"></span></button>
+              <button type="button" class="chip" data-throws="10">10 throws &middot; <span data-price="10"></span></button>
+              <button type="button" class="chip" data-throws="20">20 throws &middot; <span data-price="20"></span></button>
+            </div>
+          </div>
+          <div class="grid2">
+            <div class="field"><label for="points">Points scored</label><input type="number" id="points" min="0" step="1" inputmode="numeric" value="0" required></div>
+            <div class="field"><label for="throws">Throws</label><input type="number" id="throws" min="0" step="1" inputmode="numeric" value="10"></div>
+            <div class="field"><label for="amount">Donated ($)</label><input type="number" id="amount" min="0" step="0.01" inputmode="decimal" value="7.00"></div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="primary" type="submit" id="score-save">Add to leaderboard</button>
+            <button class="ghost hidden" type="button" id="score-cancel">Cancel edit</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card hidden" data-panel="entries">
+        <h2>Recent entries</h2>
+        <p class="hint">Every score you&rsquo;ve entered, newest first. Edit fixes a typo; delete removes it from that player&rsquo;s total.</p>
+        <div class="list" id="entries-list"></div>
+      </section>
+
+      <section class="card hidden" data-panel="players">
+        <h2>Players</h2>
+        <p class="hint">Rename fixes spelling everywhere. Deleting a player removes them and all of their scores from the board.</p>
+        <div class="field"><input type="search" id="player-search" placeholder="Search players…" autocomplete="off"></div>
+        <div class="list" id="players-list"></div>
+      </section>
+
+      <section class="card hidden" data-panel="settings">
+        <h2>Event settings</h2>
+        <p class="hint">These show on the public board. Changes appear on everyone&rsquo;s screen instantly.</p>
+        <form id="settings-form">
+          <div class="field"><label for="s-name">Event name</label><input type="text" id="s-name" required></div>
+          <div class="field"><label for="s-tagline">Tagline</label><input type="text" id="s-tagline"></div>
+          <div class="grid2">
+            <div class="field"><label for="s-goal">Fundraising goal ($)</label><input type="number" id="s-goal" min="0" step="1"></div>
+            <div class="field"><label for="s-single">Price per throw ($)</label><input type="number" id="s-single" min="0" step="0.01"></div>
+            <div class="field"><label for="s-bthrows">Bundle size</label><input type="number" id="s-bthrows" min="1" step="1"></div>
+            <div class="field"><label for="s-bprice">Bundle price ($)</label><input type="number" id="s-bprice" min="0" step="0.01"></div>
+          </div>
+          <button class="primary" type="submit">Save settings</button>
+        </form>
+        <hr style="border:none;border-top:1px solid var(--line);margin:22px 0">
+        <h2>Clear the board</h2>
+        <p class="hint">Wipes every player and score — use it once after practising, before day one starts.</p>
+        <button class="danger" id="reset-btn" type="button">Delete all players and scores</button>
+      </section>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <script type="module" src="assets/admin.js"></script>
+</body>
+</html>

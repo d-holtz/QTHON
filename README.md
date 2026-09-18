@@ -1,0 +1,86 @@
+# QTHON x SigEp Football Toss — Live Leaderboard
+
+A live, shareable leaderboard for the two-day football-toss fundraiser. Anyone with the
+link can watch the board update in real time; only signed-in admins can add or edit scores.
+
+- **`index.html`** — the public board. Share this link freely.
+- **`admin.html`** — the scorer console. Requires a login that's on the admin list.
+
+## How scoring works
+
+Each time someone pays and throws, the scorer adds an **entry**: player name, points scored,
+throws bought, dollars donated. A player's leaderboard row is the **sum of all their entries**,
+so coming back to play again pushes them up the board. Dollars are calculated from the throws
+bought ($1 each, 10 for $7 by default) and stay editable for tips and round-ups.
+
+Ties are broken by who got to that score first.
+
+## First-time setup
+
+1. **Create the admin account.** Open `admin.html`, enter your email and a password, and hit
+   *Create the admin account*. The first account created on the project automatically becomes
+   the admin — everyone else who ever signs up gets read-only access.
+2. **Check your event settings.** In the console, open *Event settings* and set the fundraising
+   goal, pricing, and event name. These show up on the public board instantly.
+3. **Share the board.** Send people the public URL (or put a QR code of it on the table).
+   Nothing on the public page can edit anything.
+
+### Adding another scorer
+
+Two people entering scores during a rush is fine. Have them create an account on `admin.html`,
+send you the user ID it shows them, then run this in the Supabase SQL editor:
+
+```sql
+insert into public.admins (user_id, email)
+values ('<their-user-id>', '<their-email>');
+```
+
+Remove them the same way with `delete from public.admins where user_id = '<their-user-id>';`
+
+## Deploying
+
+The site is plain static HTML/CSS/JS — no build step.
+
+**Vercel:** import this repo at [vercel.com/new](https://vercel.com/new), leave the framework as
+*Other*, and deploy. Every push to the branch redeploys automatically.
+
+**Anywhere else:** upload the files as-is, or run `python3 -m http.server 8000` locally and open
+`http://localhost:8000`.
+
+## Database
+
+Supabase project `qthon-football-toss`.
+
+| Table | What's in it |
+| --- | --- |
+| `participants` | One row per player (id, name) |
+| `entries` | One row per scored round (points, throws, amount, timestamp) |
+| `event_settings` | Event name, tagline, goal, pricing |
+| `admins` | Which accounts may write |
+| `leaderboard` (view) | Players with their summed points, dollars, throws, and rounds |
+
+Row-level security is on for every table: anyone may read the board, only rows in `admins`
+may write. The key in `assets/config.js` is the publishable key and is safe to ship in the
+browser — it can't bypass those rules.
+
+### Exporting results
+
+After the event, in the Supabase SQL editor:
+
+```sql
+select name, points, amount_cents / 100.0 as donated, throws, rounds
+from public.leaderboard
+order by points desc;
+```
+
+### Updating the Supabase client
+
+`assets/vendor/supabase.js` is a bundled copy of `@supabase/supabase-js` (v2.116.0) so the
+board loads nothing from a third-party CDN during the event. To refresh it:
+
+```sh
+npm i @supabase/supabase-js esbuild
+echo 'export { createClient } from "@supabase/supabase-js";' > entry.js
+npx esbuild entry.js --bundle --format=esm --minify --target=es2020 \
+  --outfile=assets/vendor/supabase.js
+```
