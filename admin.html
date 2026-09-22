@@ -51,6 +51,7 @@
     <div class="hidden" id="app">
       <div class="tabs">
         <button class="tab on" data-tab="score">Add score</button>
+        <button class="tab" data-tab="sheet">Spreadsheet</button>
         <button class="tab" data-tab="entries">Recent entries</button>
         <button class="tab" data-tab="players">Players</button>
         <button class="tab" data-tab="settings">Event settings</button>
@@ -83,6 +84,41 @@
             <button class="ghost hidden" type="button" id="score-cancel">Cancel edit</button>
           </div>
         </form>
+      </section>
+
+      <section class="card hidden" data-panel="sheet">
+        <h2>Spreadsheet</h2>
+        <p class="hint">Every player, one row each. Click a cell, type, press Tab or Enter &mdash; it saves
+          straight to the live board. These are <strong>totals</strong>, so typing 40 makes their score 40.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+          <button class="primary small" id="sheet-add" type="button">+ Add row</button>
+          <button class="ghost small" id="sheet-paste-toggle" type="button">Paste from Excel</button>
+          <button class="ghost small" id="sheet-export" type="button">Download CSV</button>
+          <span class="hint" id="sheet-status" style="margin:0;align-self:center"></span>
+        </div>
+
+        <div class="hidden" id="paste-box" style="margin-bottom:16px">
+          <div class="field">
+            <label for="paste-area">Paste rows: name, points, donated ($), throws</label>
+            <textarea id="paste-area" rows="6" placeholder="Jordan Reyes&#9;35&#9;7&#10;Maya Castellanos&#9;61&#9;14"></textarea>
+          </div>
+          <p class="hint">Copy the cells straight out of Excel or Google Sheets and paste here. A header row is
+            ignored. Names that already exist are updated rather than duplicated, so you can paste the same
+            sheet as many times as you like.</p>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="primary small" id="paste-import" type="button">Import rows</button>
+            <button class="ghost small" id="paste-cancel" type="button">Cancel</button>
+          </div>
+        </div>
+
+        <div class="sheet-scroll">
+          <table class="sheet">
+            <thead>
+              <tr><th>Player</th><th>Points</th><th>Donated ($)</th><th>Throws</th><th></th></tr>
+            </thead>
+            <tbody id="sheet-body"></tbody>
+          </table>
+        </div>
       </section>
 
       <section class="card hidden" data-panel="entries">

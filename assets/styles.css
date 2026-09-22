@@ -305,3 +305,66 @@ body.tv .stat .value { font-size: 44px; }
   .row .money { font-size: 14px; }
   .row .rank { font-size: 16px; }
 }
+
+/* ---------- spreadsheet ---------- */
+
+.sheet-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+table.sheet { width: 100%; border-collapse: collapse; min-width: 560px; }
+
+table.sheet th {
+  text-align: left;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 600;
+  padding: 0 10px 8px;
+}
+
+table.sheet th:nth-child(n+2):nth-child(-n+4) { text-align: right; }
+
+table.sheet td { padding: 0; border-top: 1px solid var(--line); }
+
+table.sheet td input {
+  width: 100%;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 11px 10px;
+  font-size: 15px;
+  color: var(--text);
+}
+
+table.sheet td input:hover { background: rgba(255, 255, 255, 0.04); }
+table.sheet td input:focus { background: var(--navy-700); outline: 2px solid rgba(255, 194, 51, 0.55); outline-offset: -1px; }
+table.sheet td input.num { text-align: right; font-variant-numeric: tabular-nums; }
+table.sheet tr.saving td input { border-color: rgba(255, 194, 51, 0.35); }
+table.sheet tr.saved td { background: rgba(67, 209, 158, 0.08); transition: background 0.8s ease; }
+table.sheet td.act { width: 44px; text-align: center; }
+
+table.sheet td.act button {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 17px;
+  padding: 6px 10px;
+  line-height: 1;
+}
+
+table.sheet td.act button:hover { color: var(--red); }
+
+textarea {
+  width: 100%;
+  background: var(--navy-900);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+textarea:focus { outline: 2px solid rgba(255, 194, 51, 0.5); outline-offset: 1px; }

@@ -15,6 +15,27 @@ bought ($1 each, 10 for $7 by default) and stay editable for tips and round-ups.
 
 Ties are broken by who got to that score first.
 
+## Three ways to enter data
+
+All three write to the same live board — use whichever suits the moment.
+
+1. **Add score** (phone, at the table). Name, tap the $7 bundle, type points, save. Each save
+   adds a round to that player's running total.
+2. **Spreadsheet** (laptop). Every player is a row; click a cell, type, press Enter. These cells
+   are **totals**, so typing 40 makes their score 40. `+ Add row` creates a player, and
+   `Download CSV` exports the board for Excel.
+3. **Paste from Excel** (bulk). Copy cells straight out of Excel or Google Sheets and paste them
+   in, in the order `name, points, donated ($), throws`. A header row is ignored, `$` signs and
+   commas are fine, and names that already exist are **updated rather than duplicated** — so you
+   can keep a sheet open all day and re-paste it as often as you like without double-counting.
+
+The two styles reconcile cleanly: the spreadsheet stores the difference as a single correction
+row per player, so setting a total never destroys the round history behind it and never inflates
+anyone's round count.
+
+There's also the **Supabase Table Editor** (supabase.com → your project → Table Editor), which is
+a literal spreadsheet grid over the raw tables. It's the fallback if the site is ever unreachable.
+
 ## First-time setup
 
 1. **Create the admin account.** Open `admin.html`, enter your email and a password, and hit

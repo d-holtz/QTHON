@@ -110,6 +110,7 @@ async function loadPlayers() {
   players = (data || []).sort((a, b) => a.name.localeCompare(b.name));
   el("people").innerHTML = players.map((p) => `<option value="${escape(p.name)}"></option>`).join("");
   renderPlayers();
+  renderSheet();
 }
 
 function renderPlayers() {
@@ -329,11 +330,191 @@ el("reset-btn").addEventListener("click", async () => {
   await Promise.all([loadPlayers(), loadEntries()]);
 });
 
+
+/* ---------------- spreadsheet ---------------- */
+
+const sheetBody = () => el("sheet-body");
+
+function sheetRow(p) {
+  return `<tr data-id="${p?.id || ""}">
+    <td><input class="cell" data-field="name" value="${escape(p?.name || "")}" placeholder="New player" autocomplete="off"></td>
+    <td><input class="cell num" data-field="points" type="number" step="1" inputmode="numeric" value="${p?.points ?? 0}"></td>
+    <td><input class="cell num" data-field="amount" type="number" step="0.01" inputmode="decimal" value="${dollars(p?.amount_cents || 0)}"></td>
+    <td><input class="cell num" data-field="throws" type="number" step="1" inputmode="numeric" value="${p?.throws ?? 0}"></td>
+    <td class="act"><button type="button" data-remove title="Delete this player">&times;</button></td>
+  </tr>`;
+}
+
+// Never redraw under someone's cursor — a rebuild mid-keystroke would eat what they typed.
+function renderSheet(force = false) {
+  const body = sheetBody();
+  if (!body) return;
+  if (!force && body.contains(document.activeElement)) return;
+  body.innerHTML = players.map(sheetRow).join("");
+}
+
+function sheetStatus(text, isError = false) {
+  const node = el("sheet-status");
+  node.textContent = text;
+  node.style.color = isError ? "var(--red)" : "var(--muted)";
+}
+
+function readRow(tr) {
+  const get = (field) => tr.querySelector(`[data-field="${field}"]`);
+  return {
+    name: get("name").value.trim(),
+    points: Math.round(Number(get("points").value || 0)),
+    amount_cents: toCents(get("amount").value),
+    throws: Math.round(Number(get("throws").value || 0)),
+  };
+}
+
+async function saveRow(tr) {
+  const row = readRow(tr);
+  if (!row.name) return;
+
+  tr.classList.add("saving");
+  sheetStatus("Saving…");
+  try {
+    let id = tr.dataset.id;
+    if (!id) {
+      id = await findOrCreateParticipant(row.name);
+      tr.dataset.id = id;
+    } else {
+      const known = players.find((p) => p.id === id);
+      if (known && known.name !== row.name) {
+        const { error } = await db.from("participants").update({ name: row.name }).eq("id", id);
+        if (error) throw error;
+      }
+    }
+
+    const { error } = await db.rpc("set_player_totals", {
+      p_participant: id,
+      p_points: row.points,
+      p_amount_cents: row.amount_cents,
+      p_throws: row.throws,
+    });
+    if (error) throw error;
+
+    tr.classList.add("saved");
+    setTimeout(() => tr.classList.remove("saved"), 900);
+    sheetStatus(`Saved ${row.name}`);
+    await Promise.all([loadPlayers(), loadEntries()]);
+  } catch (error) {
+    sheetStatus(error.message || "Could not save", true);
+    toast(error.message || "Could not save", true);
+  } finally {
+    tr.classList.remove("saving");
+  }
+}
+
+sheetBody().addEventListener("change", (e) => {
+  const tr = e.target.closest("tr");
+  if (tr && e.target.classList.contains("cell")) saveRow(tr);
+});
+
+// Enter commits and drops into the same column on the next row, like a spreadsheet.
+sheetBody().addEventListener("keydown", (e) => {
+  if (e.key !== "Enter") return;
+  e.preventDefault();
+  const tr = e.target.closest("tr");
+  const field = e.target.dataset.field;
+  e.target.blur();
+  const next = tr.nextElementSibling?.querySelector(`[data-field="${field}"]`);
+  if (next) { next.focus(); next.select(); }
+});
+
+sheetBody().addEventListener("click", async (e) => {
+  if (!("remove" in e.target.dataset)) return;
+  const tr = e.target.closest("tr");
+  const id = tr.dataset.id;
+  if (!id) return tr.remove();
+  const player = players.find((p) => p.id === id);
+  if (!confirm(`Delete ${player?.name} and all of their scores?`)) return;
+  const { error } = await db.from("participants").delete().eq("id", id);
+  if (error) return toast(error.message, true);
+  await Promise.all([loadPlayers(), loadEntries()]);
+  sheetStatus("Player deleted");
+});
+
+el("sheet-add").addEventListener("click", () => {
+  sheetBody().insertAdjacentHTML("beforeend", sheetRow(null));
+  const input = sheetBody().lastElementChild.querySelector('[data-field="name"]');
+  input.focus();
+  input.scrollIntoView({ block: "center", behavior: "smooth" });
+});
+
+/* ---------------- paste from Excel / Sheets ---------------- */
+
+const toggle = (node) => node.classList.toggle("hidden");
+el("sheet-paste-toggle").addEventListener("click", () => toggle(el("paste-box")));
+el("paste-cancel").addEventListener("click", () => {
+  el("paste-area").value = "";
+  el("paste-box").classList.add("hidden");
+});
+
+// Strips $, thousands separators and stray quotes so pasted spreadsheet cells parse.
+const parseNumber = (cell) => {
+  const n = Number(String(cell || "").replace(/[$,"\s]/g, ""));
+  return Number.isFinite(n) ? n : NaN;
+};
+
+export function parsePastedRows(text) {
+  return text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => (line.includes("\t") ? line.split("\t") : line.split(",")))
+    .map((cells) => ({
+      name: String(cells[0] || "").replace(/^"|"$/g, "").trim(),
+      points: parseNumber(cells[1]),
+      amount: parseNumber(cells[2]),
+      throws: parseNumber(cells[3]),
+    }))
+    // Drops a header row, since its points cell never parses as a number.
+    .filter((row) => row.name && !Number.isNaN(row.points))
+    .map((row) => ({
+      name: row.name,
+      points: Math.round(row.points),
+      amount_cents: Number.isNaN(row.amount) ? 0 : Math.round(row.amount * 100),
+      throws: Number.isNaN(row.throws) ? 0 : Math.round(row.throws),
+    }));
+}
+
+el("paste-import").addEventListener("click", async () => {
+  const rows = parsePastedRows(el("paste-area").value);
+  if (!rows.length) return toast("Nothing to import — each row needs a name and a points number.", true);
+  if (!confirm(`Import ${rows.length} row${rows.length === 1 ? "" : "s"}? Existing players are updated to match.`)) return;
+
+  const { data, error } = await db.rpc("import_players", { rows });
+  if (error) return toast(error.message, true);
+  toast(`Imported ${data} row${data === 1 ? "" : "s"}`);
+  el("paste-area").value = "";
+  el("paste-box").classList.add("hidden");
+  await Promise.all([loadPlayers(), loadEntries()]);
+  renderSheet(true);
+});
+
+el("sheet-export").addEventListener("click", () => {
+  const header = ["Name", "Points", "Donated", "Throws", "Rounds"];
+  const body = [...players]
+    .sort((a, b) => b.points - a.points)
+    .map((p) => [`"${p.name.replace(/"/g, '""')}"`, p.points, dollars(p.amount_cents), p.throws, p.rounds]);
+  const csv = [header, ...body].map((r) => r.join(",")).join("\n");
+  const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `qthon-leaderboard-${new Date().toISOString().slice(0, 10)}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
+});
+
 /* ---------------- tabs ---------------- */
 
 function switchTab(name) {
   document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("on", t.dataset.tab === name));
   document.querySelectorAll("[data-panel]").forEach((p) => show(p, p.dataset.panel === name));
+  if (name === "sheet") renderSheet(true);
 }
 
 document.querySelectorAll(".tab").forEach((tab) => {
