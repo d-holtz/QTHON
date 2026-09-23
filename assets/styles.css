@@ -368,3 +368,24 @@ textarea {
 }
 
 textarea:focus { outline: 2px solid rgba(255, 194, 51, 0.5); outline-offset: 1px; }
+
+/* ---------- sheet sync ---------- */
+
+.sync-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  background: var(--navy-700);
+  border: 1px solid var(--line);
+}
+
+.sync-status .sub { display: block; color: var(--muted); font-size: 13px; margin-top: 2px; }
+.sync-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); flex: 0 0 auto; }
+.sync-dot.ok { background: var(--green); box-shadow: 0 0 0 4px rgba(67, 209, 158, 0.16); }
+.sync-dot.err { background: var(--red); box-shadow: 0 0 0 4px rgba(255, 107, 107, 0.16); }
+.sync-dot.off { background: var(--muted); }
+
+details summary::-webkit-details-marker { color: var(--muted); }
+code { background: var(--navy-900); padding: 2px 6px; border-radius: 5px; font-size: 12px; }

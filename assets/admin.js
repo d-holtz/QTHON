@@ -162,7 +162,7 @@ async function loadEntries() {
 
 async function loadAll() {
   await loadSettings();
-  await Promise.all([loadPlayers(), loadEntries()]);
+  await Promise.all([loadPlayers(), loadEntries(), loadSync()]);
 }
 
 /* ---------------- score entry ---------------- */
@@ -509,12 +509,96 @@ el("sheet-export").addEventListener("click", () => {
   URL.revokeObjectURL(url);
 });
 
+
+/* ---------------- google sheet sync ---------------- */
+
+let syncConfig = null;
+
+function timeAgo(iso) {
+  if (!iso) return "never";
+  const seconds = Math.round((Date.now() - new Date(iso)) / 1000);
+  if (seconds < 10) return "just now";
+  if (seconds < 90) return `${seconds}s ago`;
+  if (seconds < 5400) return `${Math.round(seconds / 60)} min ago`;
+  return `${Math.round(seconds / 3600)} h ago`;
+}
+
+function renderSync() {
+  if (!syncConfig) return;
+  const dot = el("sync-dot");
+  const headline = el("sync-headline");
+  const detail = el("sync-detail");
+
+  dot.className = "sync-dot";
+  el("sync-url").value = syncConfig.csv_url || "";
+  el("sync-toggle").textContent = syncConfig.enabled ? "Turn off" : "Turn on";
+
+  if (!syncConfig.enabled) {
+    dot.classList.add("off");
+    headline.textContent = "Sheet sync is off";
+    detail.textContent = "The board only changes when you enter scores here.";
+    return;
+  }
+
+  if (syncConfig.last_status === "ok") {
+    dot.classList.add("ok");
+    headline.textContent = `Synced ${timeAgo(syncConfig.last_run_at)}`;
+    detail.textContent = `${syncConfig.last_row_count} player row${syncConfig.last_row_count === 1 ? "" : "s"} read from the sheet · checks again every minute`;
+  } else if (syncConfig.last_status === "error") {
+    dot.classList.add("err");
+    headline.textContent = "Sync problem";
+    detail.textContent = syncConfig.last_error || "Unknown error";
+  } else {
+    headline.textContent = "Waiting for the first sync";
+    detail.textContent = "This happens within a minute. Press Sync now to do it immediately.";
+  }
+}
+
+async function loadSync() {
+  const { data, error } = await db.from("sheet_sync").select("*").single();
+  if (error) return;
+  syncConfig = data;
+  renderSync();
+}
+
+el("sync-now").addEventListener("click", async () => {
+  el("sync-now").disabled = true;
+  el("sync-headline").textContent = "Syncing…";
+  const { data, error } = await db.rpc("sync_sheet_now");
+  el("sync-now").disabled = false;
+  if (error) return toast(error.message, true);
+  if (data?.status === "ok") toast(`Sheet read: ${data.rows} row${data.rows === 1 ? "" : "s"}`);
+  else if (data?.status === "disabled") toast("Sheet sync is turned off.", true);
+  else toast(data?.error || "Sync failed", true);
+  await Promise.all([loadSync(), loadPlayers(), loadEntries()]);
+});
+
+el("sync-toggle").addEventListener("click", async () => {
+  const { error } = await db.from("sheet_sync").update({ enabled: !syncConfig.enabled }).eq("id", true);
+  if (error) return toast(error.message, true);
+  await loadSync();
+  toast(syncConfig.enabled ? "Sheet sync on" : "Sheet sync off");
+});
+
+el("sync-save").addEventListener("click", async () => {
+  const { error } = await db.from("sheet_sync").update({ csv_url: el("sync-url").value.trim() }).eq("id", true);
+  if (error) return toast(error.message, true);
+  await loadSync();
+  toast("Sheet link saved");
+});
+
+// Keep the "synced 20s ago" line honest while the tab sits open.
+setInterval(() => {
+  if (!document.querySelector('[data-panel="gsheet"]')?.classList.contains("hidden")) loadSync();
+}, 20000);
+
 /* ---------------- tabs ---------------- */
 
 function switchTab(name) {
   document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("on", t.dataset.tab === name));
   document.querySelectorAll("[data-panel]").forEach((p) => show(p, p.dataset.panel === name));
   if (name === "sheet") renderSheet(true);
+  if (name === "gsheet") loadSync();
 }
 
 document.querySelectorAll(".tab").forEach((tab) => {

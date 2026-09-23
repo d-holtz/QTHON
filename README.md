@@ -15,7 +15,7 @@ bought ($1 each, 10 for $7 by default) and stay editable for tips and round-ups.
 
 Ties are broken by who got to that score first.
 
-## Three ways to enter data
+## Four ways to enter data
 
 All three write to the same live board — use whichever suits the moment.
 
@@ -32,6 +32,20 @@ All three write to the same live board — use whichever suits the moment.
 The two styles reconcile cleanly: the spreadsheet stores the difference as a single correction
 row per player, so setting a total never destroys the round history behind it and never inflates
 anyone's round count.
+
+4. **Live Google Sheet** (hands-off). A scheduled job on the database reads your sheet once a
+   minute and updates the board. Nothing has to stay open — not the console, not your laptop.
+   Status, a *Sync now* button and an on/off switch live under the **Google Sheet** tab.
+
+   The sheet is the source of truth for any name in it: the job reads columns
+   `A=name, B=points, C=donated, D=throws`, skips the header and any row whose points cell isn't
+   a number, and matches names case-insensitively. Deleting a row in the sheet does *not* delete
+   that player from the board — do that in the console.
+
+   Mechanically: `cron.schedule('sync-google-sheet', '* * * * *', ...)` → `public.sync_sheet()`
+   → `http_get` the sheet's CSV export → `import_csv_text` → `import_players`. `sync_sheet()` is
+   SECURITY DEFINER and only accepts `https://docs.google.com/` URLs so it can't be turned into a
+   general-purpose fetcher. Admins can trigger it by hand via `sync_sheet_now()`.
 
 There's also the **Supabase Table Editor** (supabase.com → your project → Table Editor), which is
 a literal spreadsheet grid over the raw tables. It's the fallback if the site is ever unreachable.

@@ -52,6 +52,7 @@
       <div class="tabs">
         <button class="tab on" data-tab="score">Add score</button>
         <button class="tab" data-tab="sheet">Spreadsheet</button>
+        <button class="tab" data-tab="gsheet">Google Sheet</button>
         <button class="tab" data-tab="entries">Recent entries</button>
         <button class="tab" data-tab="players">Players</button>
         <button class="tab" data-tab="settings">Event settings</button>
@@ -119,6 +120,45 @@
             <tbody id="sheet-body"></tbody>
           </table>
         </div>
+      </section>
+
+      <section class="card hidden" data-panel="gsheet">
+        <h2>Live Google Sheet</h2>
+        <p class="hint">The server reads your sheet once a minute and updates the board. Nothing needs to
+          stay open &mdash; not this page, not your laptop.</p>
+
+        <div class="sync-status" id="sync-status">
+          <span class="sync-dot" id="sync-dot"></span>
+          <div>
+            <strong id="sync-headline">Checking…</strong>
+            <span class="sub" id="sync-detail"></span>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin:16px 0">
+          <a href="https://docs.google.com/spreadsheets/d/1_53-lhUjjegv0DLzx8shGR4O15cZmk1T8VK6FCojsvg/edit"
+             target="_blank" rel="noopener"><button class="primary small" type="button">Open the sheet</button></a>
+          <button class="ghost small" id="sync-now" type="button">Sync now</button>
+          <button class="ghost small" id="sync-toggle" type="button">Turn off</button>
+        </div>
+
+        <details style="margin-bottom:16px">
+          <summary style="cursor:pointer;color:var(--muted);font-size:13px">Sheet link &amp; advanced</summary>
+          <div class="field" style="margin-top:12px">
+            <label for="sync-url">CSV export URL</label>
+            <input type="text" id="sync-url" autocomplete="off">
+          </div>
+          <button class="ghost small" id="sync-save" type="button">Save URL</button>
+          <p class="hint" style="margin-top:12px">Only <code>https://docs.google.com/</code> links are accepted.
+            To use a different sheet, take its ID from the address bar and put it in
+            <code>https://docs.google.com/spreadsheets/d/&lt;ID&gt;/export?format=csv&amp;gid=0</code>.</p>
+        </details>
+
+        <h2 style="font-size:15px">If it says the sheet isn't shared</h2>
+        <p class="hint">Open the sheet &rarr; <strong>Share</strong> &rarr; under <strong>General access</strong>
+          switch <em>Restricted</em> to <strong>Anyone with the link</strong>, leave the role as
+          <strong>Viewer</strong> &rarr; Done. Viewer is enough: the server only ever reads it, and only you
+          can edit it.</p>
       </section>
 
       <section class="card hidden" data-panel="entries">
