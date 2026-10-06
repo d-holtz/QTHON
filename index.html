@@ -3,68 +3,412 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Live Leaderboard — QTHON x SigEp Football Toss</title>
-<meta name="description" content="Live scores and donation totals from the QTHON x SigEp football toss fundraiser.">
+<title>Live Rankings — QTHON Football Toss</title>
+<meta name="description" content="Live rankings for the QTHON x SigEp football toss fundraiser.">
 <meta name="theme-color" content="#060b1c">
-<meta property="og:title" content="QTHON x SigEp Football Toss — Live Leaderboard">
+<meta property="og:title" content="QTHON Football Toss — Live Rankings">
 <meta property="og:description" content="Live scores and donation totals. Can you beat the top score?">
-<meta property="og:type" content="website">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏈</text></svg>">
-<link rel="stylesheet" href="assets/styles.css">
+<style>
+  :root {
+    --navy-900: #060b1c; --navy-800: #0b1430; --navy-700: #111f45; --navy-600: #1a2c5c;
+    --line: rgba(255,255,255,.10); --text: #eef2ff; --muted: #94a3c4;
+    --gold: #ffc233; --green: #43d19e; --red: #ff6b6b; --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--navy-900); color: var(--text);
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-text-size-adjust: 100%; }
+  body { min-height: 100vh; background:
+    radial-gradient(1100px 600px at 12% -12%, rgba(255,194,51,.13), transparent 60%),
+    radial-gradient(900px 520px at 100% 0%, rgba(59,130,246,.16), transparent 55%), var(--navy-900); }
+  .wrap { width: 100%; max-width: 1080px; margin: 0 auto; padding: 24px 16px 64px; }
+  a { color: var(--gold); }
+
+  .masthead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 22px; }
+  .brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
+  .crest { width: 46px; height: 46px; flex: 0 0 auto; border-radius: 12px;
+    background: linear-gradient(140deg, var(--gold), #ff8a3d); color: #2a1a00; display: grid; place-items: center; font-size: 24px; }
+  .brand h1 { margin: 0; font-size: clamp(20px, 3.4vw, 30px); letter-spacing: -.02em; line-height: 1.15; }
+  .brand p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+  .live { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px;
+    background: rgba(67,209,158,.12); border: 1px solid rgba(67,209,158,.35); color: var(--green);
+    font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; }
+  .live.bad { background: rgba(255,107,107,.12); border-color: rgba(255,107,107,.35); color: var(--red); }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; animation: pulse 1.8s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 20px; }
+  .stat { background: linear-gradient(180deg, var(--navy-800), var(--navy-700)); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 16px 18px; }
+  .stat .label { color: var(--muted); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; }
+  .stat .value { font-size: clamp(22px, 3.6vw, 32px); font-weight: 700; margin-top: 4px; letter-spacing: -.02em; }
+  .stat.raised .value { color: var(--gold); }
+
+  .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 20px 0 12px; }
+  input[type="search"], input[type="text"] { background: var(--navy-800); border: 1px solid var(--line); color: var(--text);
+    border-radius: 10px; padding: 11px 13px; font-size: 15px; font-family: inherit; width: 100%; }
+  input:focus { outline: 2px solid rgba(255,194,51,.5); outline-offset: 1px; }
+  .search { flex: 1 1 240px; min-width: 0; }
+  button { font-family: inherit; font-size: 14px; font-weight: 600; border-radius: 10px; border: 1px solid var(--line);
+    background: var(--navy-700); color: var(--text); padding: 11px 16px; cursor: pointer; }
+  button:hover { filter: brightness(1.18); }
+  button.primary { background: linear-gradient(140deg, var(--gold), #ffab2e); color: #2a1a00; border-color: transparent; }
+  button.ghost { background: transparent; }
+
+  .row { display: grid; grid-template-columns: 58px minmax(0,1fr) 110px 110px; align-items: center; gap: 10px;
+    padding: 14px 18px; background: var(--navy-800); border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: 8px; }
+  .row.head { background: none; border: none; padding: 0 18px 4px; color: var(--muted); font-size: 11px;
+    letter-spacing: .1em; text-transform: uppercase; margin-bottom: 4px; }
+  .row .rank { font-size: 19px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .row .name { font-size: 17px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row .points { font-size: 20px; font-weight: 700; text-align: right; font-variant-numeric: tabular-nums; }
+  .row .money { text-align: right; color: var(--gold); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .row.top1 { background: linear-gradient(120deg, rgba(255,194,51,.22), var(--navy-700)); border-color: rgba(255,194,51,.45); }
+  .row.top2 { background: linear-gradient(120deg, rgba(203,213,225,.16), var(--navy-700)); border-color: rgba(203,213,225,.3); }
+  .row.top3 { background: linear-gradient(120deg, rgba(205,127,50,.18), var(--navy-700)); border-color: rgba(205,127,50,.35); }
+  .row.top1 .rank, .row.top2 .rank, .row.top3 .rank { color: var(--text); }
+
+  .note { text-align: center; color: var(--muted); padding: 50px 20px; border: 1px dashed var(--line); border-radius: var(--radius); }
+  .footnote { margin-top: 26px; text-align: center; color: var(--muted); font-size: 13px; line-height: 1.7; }
+
+  .setup { max-width: 620px; margin: 6vh auto; background: var(--navy-800); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 28px; }
+  .setup h2 { margin: 0 0 6px; font-size: 20px; }
+  .setup p { color: var(--muted); font-size: 14px; line-height: 1.65; }
+  .setup ol { color: var(--muted); font-size: 14px; line-height: 1.8; padding-left: 20px; }
+  .setup .field { margin: 18px 0 12px; }
+  .err { color: var(--red); font-size: 14px; margin-top: 12px; min-height: 20px; }
+
+  body.tv .wrap { max-width: 1600px; }
+  body.tv .toolbar, body.tv .footnote { display: none; }
+  body.tv .row { padding: 20px 26px; grid-template-columns: 90px minmax(0,1fr) 170px 170px; }
+  body.tv .row .rank { font-size: 34px; }
+  body.tv .row .name { font-size: 30px; }
+  body.tv .row .points { font-size: 34px; }
+  body.tv .row .money { font-size: 26px; }
+  body.tv .stat .value { font-size: 44px; }
+
+  .hidden { display: none !important; }
+
+  @media (max-width: 560px) {
+    .row { grid-template-columns: 40px minmax(0,1fr) 74px 80px; padding: 12px 13px; gap: 8px; }
+    .row.head { padding: 0 13px 4px; font-size: 10px; }
+    .row .name { font-size: 15px; white-space: normal; line-height: 1.25; }
+    .row .points { font-size: 17px; }
+    .row .money { font-size: 14px; }
+    .row .rank { font-size: 16px; }
+  }
+</style>
 </head>
 <body>
-  <div class="wrap">
-    <header class="masthead">
-      <div class="brand">
-        <div class="crest">🏈</div>
-        <div>
-          <h1 id="event-name">QTHON x SigEp Football Toss</h1>
-          <p id="tagline">Loading the board…</p>
-        </div>
-      </div>
-      <div class="live" id="live"><span class="dot"></span><span id="live-text">Live</span></div>
-    </header>
 
-    <section class="stats">
-      <div class="stat raised">
-        <div class="label">Raised</div>
-        <div class="value" id="stat-raised">$0</div>
-      </div>
-      <div class="stat">
-        <div class="label">Players</div>
-        <div class="value" id="stat-players">0</div>
-      </div>
-      <div class="stat">
-        <div class="label">Throws</div>
-        <div class="value" id="stat-throws">0</div>
-      </div>
-      <div class="stat">
-        <div class="label">Top score</div>
-        <div class="value" id="stat-top">0</div>
-      </div>
-    </section>
+<!-- Shown only until a sheet is pointed at -->
+<div class="setup hidden" id="setup">
+  <h2>Point this page at your Google Sheet</h2>
+  <p>Paste the link to your sheet and this becomes your live rankings page. Nothing to install,
+     no account, no uploading — type in the sheet and the page follows.</p>
+  <ol>
+    <li>In your sheet: <strong>Share</strong> → <strong>General access</strong> →
+        <strong>Anyone with the link</strong> (Viewer).</li>
+    <li>Copy the address from your browser bar and paste it below.</li>
+  </ol>
+  <div class="field"><input type="text" id="setup-url" placeholder="https://docs.google.com/spreadsheets/d/..."></div>
+  <button class="primary" id="setup-go">Use this sheet</button>
+  <div class="err" id="setup-err"></div>
+</div>
 
-    <section class="goal" id="goal-wrap">
-      <div class="goal-bar"><div class="goal-fill" id="goal-fill" style="width:0%"></div></div>
-      <div class="goal-text"><span id="goal-now">$0 raised</span><span id="goal-target">Goal $0</span></div>
-    </section>
-
-    <div class="toolbar">
-      <div class="search"><input type="search" id="search" placeholder="Search for your name…" autocomplete="off"></div>
-      <button class="ghost" id="tv-toggle" title="Big text for a TV or projector">TV mode</button>
+<div class="wrap hidden" id="board-wrap">
+  <header class="masthead">
+    <div class="brand">
+      <div class="crest">🏈</div>
+      <div>
+        <h1>QTHON Football Toss</h1>
+        <p id="subtitle">Loading the rankings…</p>
+      </div>
     </div>
+    <div class="live" id="live"><span class="dot"></span><span id="live-text">Live</span></div>
+  </header>
 
-    <div class="row head">
-      <div>#</div><div>Player</div><div style="text-align:right">Points</div><div style="text-align:right">Donated</div>
-    </div>
-    <div class="board" id="board"></div>
+  <section class="stats">
+    <div class="stat raised"><div class="label">Raised</div><div class="value" id="stat-raised">$0</div></div>
+    <div class="stat"><div class="label">Players</div><div class="value" id="stat-players">0</div></div>
+    <div class="stat"><div class="label">Top score</div><div class="value" id="stat-top">0</div></div>
+  </section>
 
-    <p class="footnote">
-      <span id="pricing">$1 a throw &middot; 10 throws for $7</span> &middot; every dollar goes to QTHON.<br>
-      Scores update the moment they&rsquo;re entered — keep this page open.
-    </p>
+  <div class="toolbar">
+    <div class="search"><input type="search" id="search" placeholder="Search for your name…" autocomplete="off"></div>
+    <button class="ghost" id="tv-toggle" title="Big text for a TV or projector">TV mode</button>
   </div>
 
-  <script type="module" src="assets/app.js"></script>
+  <div class="row head"><div>#</div><div>Player</div><div style="text-align:right">Points</div><div style="text-align:right">Donated</div></div>
+  <div id="board"></div>
+
+  <p class="footnote">
+    Every dollar goes to QTHON.<br>
+    <span id="updated">Updating automatically — keep this page open.</span>
+  </p>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var REFRESH_MS = 30000;
+  var board = document.getElementById("board");
+
+  /* ---------- where the sheet lives ---------- */
+
+  // Accepts a full Google Sheets URL or a bare file ID.
+  function extractId(input) {
+    var text = String(input || "").trim();
+    var match = text.match(/\/d\/(?:e\/)?([a-zA-Z0-9-_]{20,})/);
+    if (match) return match[1];
+    if (/^[a-zA-Z0-9-_]{20,}$/.test(text)) return text;
+    return null;
+  }
+
+  var params = new URLSearchParams(location.search);
+  var sheetId = extractId(params.get("sheet")) || localStorage.getItem("sheetId") || "";
+  var tabName = params.get("tab") || "";
+
+  function showSetup(message) {
+    document.getElementById("setup").classList.remove("hidden");
+    document.getElementById("board-wrap").classList.add("hidden");
+    if (message) document.getElementById("setup-err").textContent = message;
+  }
+
+  document.getElementById("setup-go").addEventListener("click", function () {
+    var id = extractId(document.getElementById("setup-url").value);
+    if (!id) {
+      document.getElementById("setup-err").textContent = "That doesn't look like a Google Sheets link.";
+      return;
+    }
+    localStorage.setItem("sheetId", id);
+    location.search = "?sheet=" + id;
+  });
+
+  /* ---------- reading the sheet ---------- */
+
+  // Loaded through a <script> tag rather than fetch(), which sidesteps browser
+  // cross-origin rules entirely — Google's gviz endpoint answers by calling us back.
+  function loadSheet() {
+    return new Promise(function (resolve, reject) {
+      var callback = "__board_cb_" + Math.random().toString(36).slice(2);
+      var script = document.createElement("script");
+
+      var timer = setTimeout(function () { finish(); reject(new Error("timeout")); }, 15000);
+
+      function finish() {
+        clearTimeout(timer);
+        try { delete window[callback]; } catch (e) { window[callback] = undefined; }
+        if (script.parentNode) script.parentNode.removeChild(script);
+      }
+
+      window[callback] = function (payload) { finish(); resolve(payload); };
+      script.onerror = function () { finish(); reject(new Error("network")); };
+
+      script.src = "https://docs.google.com/spreadsheets/d/" + encodeURIComponent(sheetId) +
+        "/gviz/tq?tqx=out:json;responseHandler:" + callback +
+        (tabName ? "&sheet=" + encodeURIComponent(tabName) : "") +
+        "&nocache=" + Date.now();
+      document.head.appendChild(script);
+    });
+  }
+
+  /* ---------- making sense of the columns ---------- */
+
+  var NAME_RE = /^\s*(name|player|participant|person|full\s*name)\s*$/i;
+  var POINTS_RE = /(point|score)/i;
+  var MONEY_RE = /(donat|amount|paid|raised|money|\$)/i;
+
+  function toNumber(value) {
+    if (typeof value === "number") return isFinite(value) ? value : NaN;
+    var cleaned = String(value == null ? "" : value).replace(/[$,\s]/g, "");
+    if (cleaned === "") return NaN;
+    var n = Number(cleaned);
+    return isFinite(n) ? n : NaN;
+  }
+
+  function findColumn(headers, regex, skip) {
+    for (var i = 0; i < headers.length; i++) {
+      if (i !== skip && regex.test(headers[i])) return i;
+    }
+    return -1;
+  }
+
+  // Builds the player list for one guess at where the headers are, and scores it.
+  // Row count dominates, but a guess whose headings actually matched wins a tie —
+  // without that, a title row above the real headings can win and silently lose the
+  // donation column.
+  function attempt(headers, rows) {
+    var namedCol = findColumn(headers, NAME_RE, -1);
+    var nameCol = namedCol === -1 ? 0 : namedCol;
+    var scoredCol = findColumn(headers, POINTS_RE, nameCol);
+    var pointsCol = scoredCol === -1 ? (nameCol === 0 ? 1 : 0) : scoredCol;
+    var moneyCol = findColumn(headers, MONEY_RE, nameCol);
+
+    var players = [];
+    for (var i = 0; i < rows.length; i++) {
+      var row = rows[i];
+      var name = String(row[nameCol] == null ? "" : row[nameCol]).trim();
+      var points = toNumber(row[pointsCol]);
+      if (!name || isNaN(points)) continue;
+      if (/^(total|totals|sum|grand\s*total)$/i.test(name)) continue;
+      players.push({
+        name: name,
+        points: Math.round(points),
+        amount: moneyCol === -1 ? 0 : (isNaN(toNumber(row[moneyCol])) ? 0 : toNumber(row[moneyCol]))
+      });
+    }
+    return {
+      players: players,
+      score: players.length * 100 +
+        (namedCol !== -1 ? 10 : 0) +
+        (scoredCol !== -1 ? 10 : 0) +
+        (moneyCol !== -1 ? 5 : 0)
+    };
+  }
+
+  function parseSheet(payload) {
+    if (!payload || !payload.table) throw new Error("empty");
+
+    var cols = payload.table.cols || [];
+    var grid = (payload.table.rows || []).map(function (r) {
+      return (r.c || []).map(function (cell) {
+        if (!cell) return "";
+        return cell.f != null ? cell.f : (cell.v == null ? "" : cell.v);
+      });
+    });
+
+    var candidates = [];
+
+    // Google often lifts the first row into column labels.
+    var labels = cols.map(function (c) { return String((c && c.label) || "").trim(); });
+    if (labels.some(function (l) { return l !== ""; })) candidates.push(attempt(labels, grid));
+
+    // Otherwise (or if that read poorly) try each of the first few rows as the header row.
+    for (var i = 0; i < Math.min(grid.length, 10); i++) {
+      var headers = grid[i].map(function (c) { return String(c == null ? "" : c).trim(); });
+      candidates.push(attempt(headers, grid.slice(i + 1)));
+    }
+
+    candidates.sort(function (a, b) { return b.score - a.score; });
+    return candidates.length ? candidates[0].players : [];
+  }
+
+  /* ---------- drawing ---------- */
+
+  var players = [];
+  var filter = "";
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function money(amount) {
+    return "$" + Number(amount || 0).toLocaleString("en-US", {
+      minimumFractionDigits: amount % 1 === 0 ? 0 : 2, maximumFractionDigits: 2
+    });
+  }
+
+  function setLive(ok, text) {
+    var node = document.getElementById("live");
+    node.classList.toggle("bad", !ok);
+    document.getElementById("live-text").textContent = text;
+  }
+
+  function render() {
+    var ranked = players.slice().sort(function (a, b) { return b.points - a.points || a.name.localeCompare(b.name); });
+
+    var lastPoints = null, lastRank = 0;
+    ranked = ranked.map(function (p, i) {
+      var rank = p.points === lastPoints ? lastRank : i + 1;
+      lastPoints = p.points; lastRank = rank;
+      return { name: p.name, points: p.points, amount: p.amount, rank: rank };
+    });
+
+    var raised = 0, top = 0;
+    ranked.forEach(function (p) { raised += p.amount; if (p.points > top) top = p.points; });
+    document.getElementById("stat-raised").textContent = money(raised);
+    document.getElementById("stat-players").textContent = ranked.length.toLocaleString("en-US");
+    document.getElementById("stat-top").textContent = top.toLocaleString("en-US");
+
+    var needle = filter.trim().toLowerCase();
+    var shown = needle ? ranked.filter(function (p) { return p.name.toLowerCase().indexOf(needle) !== -1; }) : ranked;
+
+    if (!shown.length) {
+      board.innerHTML = '<div class="note">' +
+        (needle ? "No one by that name yet." : "No scores in the sheet yet.") + "</div>";
+      return;
+    }
+
+    board.innerHTML = shown.map(function (p) {
+      var medal = (p.rank <= 3 && !needle) ? " top" + p.rank : "";
+      return '<div class="row' + medal + '">' +
+        '<div class="rank">' + p.rank + "</div>" +
+        '<div class="name">' + escapeHtml(p.name) + "</div>" +
+        '<div class="points">' + p.points.toLocaleString("en-US") + "</div>" +
+        '<div class="money">' + money(p.amount) + "</div>" +
+        "</div>";
+    }).join("");
+  }
+
+  /* ---------- the loop ---------- */
+
+  function refresh() {
+    return loadSheet().then(function (payload) {
+      if (payload && payload.status === "error") {
+        var reason = (payload.errors && payload.errors[0] && payload.errors[0].detailed_message) || "Google refused the request.";
+        throw new Error(reason.replace(/<[^>]*>/g, ""));
+      }
+      players = parseSheet(payload);
+      setLive(true, "Live");
+      document.getElementById("subtitle").textContent =
+        players.length + (players.length === 1 ? " player" : " players") + " · updates by itself";
+      document.getElementById("updated").textContent =
+        "Last updated " + new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) +
+        " — this page refreshes itself.";
+      render();
+    }).catch(function (error) {
+      setLive(false, "Can't read sheet");
+      if (!players.length) {
+        board.innerHTML = '<div class="note"><strong>Can\'t read the sheet.</strong><br><br>' +
+          "The usual cause is sharing: open the sheet → <strong>Share</strong> → " +
+          "<strong>Anyone with the link</strong> → Viewer.<br><br>" +
+          '<span style="font-size:12px;opacity:.7">' + escapeHtml(error.message) + "</span></div>";
+      }
+    });
+  }
+
+  document.getElementById("search").addEventListener("input", function (e) {
+    filter = e.target.value;
+    render();
+  });
+
+  function setTv(on) {
+    document.body.classList.toggle("tv", on);
+    document.getElementById("tv-toggle").textContent = on ? "Exit TV mode" : "TV mode";
+    try { localStorage.setItem("tv", on ? "1" : "0"); } catch (e) {}
+  }
+  document.getElementById("tv-toggle").addEventListener("click", function () {
+    setTv(!document.body.classList.contains("tv"));
+  });
+
+  if (!sheetId) {
+    showSetup("");
+  } else {
+    document.getElementById("board-wrap").classList.remove("hidden");
+    var tvWanted = params.has("tv");
+    try { tvWanted = tvWanted || localStorage.getItem("tv") === "1"; } catch (e) {}
+    setTv(tvWanted);
+    refresh();
+    setInterval(refresh, REFRESH_MS);
+    document.addEventListener("visibilitychange", function () { if (!document.hidden) refresh(); });
+  }
+})();
+</script>
 </body>
 </html>

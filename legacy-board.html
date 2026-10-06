@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Live Leaderboard — QTHON x SigEp Football Toss</title>
+<meta name="description" content="Live scores and donation totals from the QTHON x SigEp football toss fundraiser.">
+<meta name="theme-color" content="#060b1c">
+<meta property="og:title" content="QTHON x SigEp Football Toss — Live Leaderboard">
+<meta property="og:description" content="Live scores and donation totals. Can you beat the top score?">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏈</text></svg>">
+<link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+  <div class="wrap">
+    <header class="masthead">
+      <div class="brand">
+        <div class="crest">🏈</div>
+        <div>
+          <h1 id="event-name">QTHON x SigEp Football Toss</h1>
+          <p id="tagline">Loading the board…</p>
+        </div>
+      </div>
+      <div class="live" id="live"><span class="dot"></span><span id="live-text">Live</span></div>
+    </header>
+
+    <section class="stats">
+      <div class="stat raised">
+        <div class="label">Raised</div>
+        <div class="value" id="stat-raised">$0</div>
+      </div>
+      <div class="stat">
+        <div class="label">Players</div>
+        <div class="value" id="stat-players">0</div>
+      </div>
+      <div class="stat">
+        <div class="label">Throws</div>
+        <div class="value" id="stat-throws">0</div>
+      </div>
+      <div class="stat">
+        <div class="label">Top score</div>
+        <div class="value" id="stat-top">0</div>
+      </div>
+    </section>
+
+    <section class="goal" id="goal-wrap">
+      <div class="goal-bar"><div class="goal-fill" id="goal-fill" style="width:0%"></div></div>
+      <div class="goal-text"><span id="goal-now">$0 raised</span><span id="goal-target">Goal $0</span></div>
+    </section>
+
+    <div class="toolbar">
+      <div class="search"><input type="search" id="search" placeholder="Search for your name…" autocomplete="off"></div>
+      <button class="ghost" id="tv-toggle" title="Big text for a TV or projector">TV mode</button>
+    </div>
+
+    <div class="row head">
+      <div>#</div><div>Player</div><div style="text-align:right">Points</div><div style="text-align:right">Donated</div>
+    </div>
+    <div class="board" id="board"></div>
+
+    <p class="footnote">
+      <span id="pricing">$1 a throw &middot; 10 throws for $7</span> &middot; every dollar goes to QTHON.<br>
+      Scores update the moment they&rsquo;re entered — keep this page open.
+    </p>
+  </div>
+
+  <script type="module" src="assets/app.js"></script>
+</body>
+</html>
