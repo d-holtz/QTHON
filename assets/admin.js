@@ -592,6 +592,202 @@ setInterval(() => {
   if (!document.querySelector('[data-panel="gsheet"]')?.classList.contains("hidden")) loadSync();
 }, 20000);
 
+
+/* ---------------- excel upload ---------------- */
+
+let sheetRows = [];      // raw rows from the file, as arrays
+let headerIndex = -1;    // which row held the headers, -1 if none
+let xlsxLib = null;
+
+// 330KB parser, only fetched the first time someone actually uploads something.
+async function loadXlsx() {
+  if (!xlsxLib) xlsxLib = await import("./vendor/xlsx.js");
+  return xlsxLib;
+}
+
+const COLUMN_LETTERS = (i) => {
+  let label = "";
+  let n = i;
+  do { label = String.fromCharCode(65 + (n % 26)) + label; n = Math.floor(n / 26) - 1; } while (n >= 0);
+  return label;
+};
+
+// Looks for the row that names the columns, so totals rows and title rows above it don't matter.
+function findHeaderRow(rows) {
+  const looksLikeName = /^\s*(name|player|participant|person|full\s*name)\s*$/i;
+  const looksLikeNumber = /(point|score|donat|amount|paid|raised|\$|throw)/i;
+  for (let i = 0; i < Math.min(rows.length, 15); i++) {
+    const cells = rows[i].map((c) => String(c ?? "").trim());
+    if (cells.some((c) => looksLikeName.test(c)) && cells.some((c) => looksLikeNumber.test(c))) return i;
+  }
+  return -1;
+}
+
+function guessColumn(headers, patterns, fallback) {
+  for (const pattern of patterns) {
+    const found = headers.findIndex((h) => pattern.test(h));
+    if (found !== -1) return found;
+  }
+  return fallback;
+}
+
+function columnOptions(headers) {
+  return headers
+    .map((h, i) => `<option value="${i}">${escape(h ? `${COLUMN_LETTERS(i)} — ${h}` : `Column ${COLUMN_LETTERS(i)}`)}</option>`)
+    .join("");
+}
+
+function dataRows() {
+  return sheetRows.slice(headerIndex + 1);
+}
+
+// Pull the numbers out of whatever the file holds: "$7.00", "7", 7, " 7 " all work.
+function cellNumber(value) {
+  if (typeof value === "number") return Number.isFinite(value) ? value : NaN;
+  const cleaned = String(value ?? "").replace(/[$,\s]/g, "");
+  if (cleaned === "") return NaN;
+  const n = Number(cleaned);
+  return Number.isFinite(n) ? n : NaN;
+}
+
+function buildRows() {
+  const pick = (id) => Number(el(id).value);
+  const [nameCol, pointsCol, amountCol, throwsCol] = ["col-name", "col-points", "col-amount", "col-throws"].map(pick);
+
+  return dataRows()
+    .map((row) => {
+      const name = String(row[nameCol] ?? "").trim();
+      const points = cellNumber(row[pointsCol]);
+      const amount = amountCol === -1 ? NaN : cellNumber(row[amountCol]);
+      const throwCount = throwsCol === -1 ? NaN : cellNumber(row[throwsCol]);
+      return { name, points, amount, throwCount };
+    })
+    // A row counts only if it names someone and gives a number; that drops blank rows,
+    // notes and any "TOTAL" line at the bottom.
+    .filter((r) => r.name && !Number.isNaN(r.points) && !/^(total|totals|sum|grand total)$/i.test(r.name))
+    .map((r) => ({
+      name: r.name,
+      points: Math.round(r.points),
+      amount_cents: Number.isNaN(r.amount) ? 0 : Math.round(r.amount * 100),
+      throws: Number.isNaN(r.throwCount) ? 0 : Math.round(r.throwCount),
+    }));
+}
+
+function renderPreview() {
+  const rows = buildRows();
+  const shown = rows.slice(0, 6);
+  el("preview-table").innerHTML = shown.length
+    ? `<tr><td>Name</td><td class="num">Points</td><td class="num">Donated</td><td class="num">Throws</td></tr>` +
+      shown.map((r) => `<tr>
+        <td>${escape(r.name)}</td>
+        <td class="num">${num(r.points)}</td>
+        <td class="num">${money(r.amount_cents)}</td>
+        <td class="num">${num(r.throws)}</td>
+      </tr>`).join("")
+    : `<tr><td style="color:var(--red)">No usable rows found — check the column choices above.</td></tr>`;
+
+  el("preview-note").textContent = rows.length
+    ? `${rows.length} player${rows.length === 1 ? "" : "s"} ready${rows.length > 6 ? ` (showing the first 6)` : ""}.`
+    : "";
+  el("do-import").disabled = rows.length === 0;
+}
+
+async function handleFile(file) {
+  if (!file) return;
+  try {
+    const { read, utils } = await loadXlsx();
+    const buffer = await file.arrayBuffer();
+    const book = read(buffer, { type: "array" });
+    const firstSheet = book.Sheets[book.SheetNames[0]];
+    sheetRows = utils.sheet_to_json(firstSheet, { header: 1, blankrows: false, raw: true });
+  } catch (error) {
+    return toast("Could not read that file — is it a real .xlsx or .csv?", true);
+  }
+
+  if (!sheetRows.length) return toast("That file looks empty.", true);
+
+  headerIndex = findHeaderRow(sheetRows);
+  const width = Math.max(...sheetRows.map((r) => r.length), 1);
+  const headers = headerIndex === -1
+    ? Array.from({ length: width }, () => "")
+    : Array.from({ length: width }, (_, i) => String(sheetRows[headerIndex][i] ?? "").trim());
+
+  const options = columnOptions(headers);
+  el("col-name").innerHTML = options;
+  el("col-points").innerHTML = options;
+  el("col-amount").innerHTML = `<option value="-1">— none —</option>` + options;
+  el("col-throws").innerHTML = `<option value="-1">— none —</option>` + options;
+
+  el("col-name").value = guessColumn(headers, [/^\s*(name|player|participant|person)/i], 0);
+  el("col-points").value = guessColumn(headers, [/point/i, /score/i], 1);
+  el("col-amount").value = guessColumn(headers, [/donat/i, /amount/i, /paid/i, /raised/i, /\$/], 2);
+  el("col-throws").value = guessColumn(headers, [/throw/i], -1);
+
+  el("file-name").textContent = file.name;
+  el("file-meta").textContent = `${dataRows().length} rows${headerIndex === -1 ? " · no header row found, check the columns" : ""}`;
+  el("dropzone").classList.add("hidden");
+  el("map-box").classList.remove("hidden");
+  el("import-status").textContent = "";
+  renderPreview();
+}
+
+const dropzone = el("dropzone");
+const fileInput = el("file-input");
+
+dropzone.addEventListener("click", () => fileInput.click());
+dropzone.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileInput.click(); } });
+fileInput.addEventListener("change", (e) => handleFile(e.target.files[0]));
+
+["dragenter", "dragover"].forEach((type) =>
+  dropzone.addEventListener(type, (e) => { e.preventDefault(); dropzone.classList.add("over"); }));
+["dragleave", "drop"].forEach((type) =>
+  dropzone.addEventListener(type, (e) => { e.preventDefault(); dropzone.classList.remove("over"); }));
+dropzone.addEventListener("drop", (e) => handleFile(e.dataTransfer.files[0]));
+
+["col-name", "col-points", "col-amount", "col-throws"].forEach((id) =>
+  el(id).addEventListener("change", renderPreview));
+
+el("file-clear").addEventListener("click", () => {
+  sheetRows = [];
+  fileInput.value = "";
+  el("map-box").classList.add("hidden");
+  el("dropzone").classList.remove("hidden");
+});
+
+el("do-import").addEventListener("click", async () => {
+  const rows = buildRows();
+  if (!rows.length) return;
+  const prune = el("prune").checked;
+
+  const warning = prune
+    ? `Update ${rows.length} player${rows.length === 1 ? "" : "s"} and REMOVE anyone not in this file?`
+    : `Update the board with ${rows.length} player${rows.length === 1 ? "" : "s"}?`;
+  if (!confirm(warning)) return;
+
+  el("do-import").disabled = true;
+  el("import-status").textContent = "Uploading…";
+  try {
+    const { data: imported, error } = await db.rpc("import_players", { rows });
+    if (error) throw error;
+
+    let removed = 0;
+    if (prune) {
+      const { data, error: pruneError } = await db.rpc("remove_missing_players", { keep_names: rows.map((r) => r.name) });
+      if (pruneError) throw pruneError;
+      removed = data || 0;
+    }
+
+    el("import-status").textContent = `Done — ${imported} updated${removed ? `, ${removed} removed` : ""}.`;
+    toast(`Leaderboard updated: ${imported} player${imported === 1 ? "" : "s"}`);
+    await Promise.all([loadPlayers(), loadEntries()]);
+  } catch (error) {
+    el("import-status").textContent = "";
+    toast(error.message || "Upload failed", true);
+  } finally {
+    el("do-import").disabled = false;
+  }
+});
+
 /* ---------------- tabs ---------------- */
 
 function switchTab(name) {

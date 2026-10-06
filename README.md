@@ -15,16 +15,21 @@ bought ($1 each, 10 for $7 by default) and stay editable for tips and round-ups.
 
 Ties are broken by who got to that score first.
 
-## Four ways to enter data
+## Five ways to enter data
 
 All three write to the same live board — use whichever suits the moment.
 
-1. **Add score** (phone, at the table). Name, tap the $7 bundle, type points, save. Each save
+1. **Upload Excel** (the main one). Drop an `.xlsx`, `.xlsm` or `.csv` into the console and the
+   board updates immediately. The header row is found automatically even if it isn't row 1,
+   columns are auto-mapped (and can be corrected by hand), and blank rows, note rows and a
+   trailing `TOTAL` row are ignored. Numbers in the file are **totals**. Tick *Remove players who
+   aren't in this file* to make the board match the spreadsheet exactly.
+2. **Add score** (phone, at the table). Name, tap the $7 bundle, type points, save. Each save
    adds a round to that player's running total.
-2. **Spreadsheet** (laptop). Every player is a row; click a cell, type, press Enter. These cells
+3. **Spreadsheet** (laptop). Every player is a row; click a cell, type, press Enter. These cells
    are **totals**, so typing 40 makes their score 40. `+ Add row` creates a player, and
    `Download CSV` exports the board for Excel.
-3. **Paste from Excel** (bulk). Copy cells straight out of Excel or Google Sheets and paste them
+4. **Paste from Excel** (bulk). Copy cells straight out of Excel or Google Sheets and paste them
    in, in the order `name, points, donated ($), throws`. A header row is ignored, `$` signs and
    commas are fine, and names that already exist are **updated rather than duplicated** — so you
    can keep a sheet open all day and re-paste it as often as you like without double-counting.
@@ -33,7 +38,7 @@ The two styles reconcile cleanly: the spreadsheet stores the difference as a sin
 row per player, so setting a total never destroys the round history behind it and never inflates
 anyone's round count.
 
-4. **Live Google Sheet** (hands-off). A scheduled job on the database reads your sheet once a
+5. **Live Google Sheet** (hands-off, currently switched off). A scheduled job on the database reads your sheet once a
    minute and updates the board. Nothing has to stay open — not the console, not your laptop.
    Status, a *Sync now* button and an on/off switch live under the **Google Sheet** tab.
 

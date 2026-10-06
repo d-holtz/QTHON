@@ -50,7 +50,8 @@
     <!-- signed in as admin -->
     <div class="hidden" id="app">
       <div class="tabs">
-        <button class="tab on" data-tab="score">Add score</button>
+        <button class="tab on" data-tab="upload">Upload Excel</button>
+        <button class="tab" data-tab="score">Add score</button>
         <button class="tab" data-tab="sheet">Spreadsheet</button>
         <button class="tab" data-tab="gsheet">Google Sheet</button>
         <button class="tab" data-tab="entries">Recent entries</button>
@@ -58,7 +59,54 @@
         <button class="tab" data-tab="settings">Event settings</button>
       </div>
 
-      <section class="card" data-panel="score">
+      <section class="card" data-panel="upload">
+        <h2>Upload your Excel file</h2>
+        <p class="hint">Drop in the spreadsheet you're keeping scores in. The board updates the moment
+          you import &mdash; everyone watching sees it without refreshing.</p>
+
+        <div class="dropzone" id="dropzone" tabindex="0" role="button">
+          <div class="dz-icon">&#128202;</div>
+          <strong>Drop your file here</strong>
+          <span>or click to choose &middot; .xlsx, .xlsm or .csv</span>
+          <input type="file" id="file-input" accept=".xlsx,.xlsm,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv" hidden>
+        </div>
+
+        <div class="hidden" id="map-box">
+          <div class="item" style="margin:16px 0">
+            <div class="who"><strong id="file-name"></strong><span id="file-meta"></span></div>
+            <div class="acts"><button class="small ghost" id="file-clear" type="button">Choose another</button></div>
+          </div>
+
+          <p class="hint">Which column is which? I guessed from your header row &mdash; change any that are wrong.</p>
+          <div class="grid2">
+            <div class="field"><label for="col-name">Name</label><select id="col-name"></select></div>
+            <div class="field"><label for="col-points">Points</label><select id="col-points"></select></div>
+            <div class="field"><label for="col-amount">Donation ($)</label><select id="col-amount"></select></div>
+            <div class="field"><label for="col-throws">Throws (optional)</label><select id="col-throws"></select></div>
+          </div>
+
+          <div class="preview-wrap">
+            <table class="sheet" id="preview-table"></table>
+          </div>
+          <p class="hint" id="preview-note"></p>
+
+          <label class="check">
+            <input type="checkbox" id="prune">
+            <span>Remove players who aren't in this file &mdash; makes the board match your spreadsheet exactly</span>
+          </label>
+
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px">
+            <button class="primary" id="do-import" type="button">Update the leaderboard</button>
+            <span class="hint" id="import-status" style="margin:0;align-self:center"></span>
+          </div>
+        </div>
+
+        <p class="hint" style="margin-top:18px">Your file needs a column of names and a column of points;
+          a donation column is used if you have one. Everything else is ignored, so extra columns,
+          notes and totals rows are fine.</p>
+      </section>
+
+      <section class="card hidden" data-panel="score">
         <h2 id="score-title">Add a score</h2>
         <p class="hint">Type the player&rsquo;s name — pick an existing one to add to their total, or type a new name to create them.</p>
         <form id="score-form">
